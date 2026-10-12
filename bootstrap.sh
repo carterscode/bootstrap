@@ -12,7 +12,7 @@ umask 077
 # The signed helper is its own project: github.com/carterscode/icloud-secret
 HELPER_VERSION="v1.0.0"
 RELEASE_URL="https://github.com/carterscode/icloud-secret/releases/download/${HELPER_VERSION}/icloud-secret-macos-universal.zip"
-EXPECTED_SHA256="REPLACE_WITH_ZIP_SHA256"
+EXPECTED_SHA256="1f46695354d77419e2ce65d9bebe66354881e3fa21f3d619ee9836a721c08fc2"
 EXPECTED_TEAM_ID="GA9R7U8CJG"
 GH_USERNAME="carterscode"          # PAT owner; GitHub HTTPS wants a non-empty username
 SECRET_NAME="github-dotfiles"
@@ -45,6 +45,9 @@ if [ ! -x "$KEYCHAIN_CLI" ]; then
   got_team="$(codesign -dv --verbose=4 "$WORK/iCloudSecret.app" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
   [ "$got_team" = "$EXPECTED_TEAM_ID" ] || { echo "unexpected signing team: '$got_team'" >&2; exit 1; }
   ditto "$WORK/iCloudSecret.app" "$APP_PATH"
+  # Strip any quarantine so running it never triggers a Gatekeeper prompt
+  # (curl-fetched files normally aren't quarantined; this makes it certain).
+  xattr -dr com.apple.quarantine "$APP_PATH" 2>/dev/null || true
 fi
 
 # 3. Read the iCloud-synced credential. Sync is eventually-consistent, so retry.
